@@ -5,18 +5,6 @@ import (
     "net/http"
 )
 
-func home(w http.ResponseWriter, r *http.Request) {
-    w.Write([]byte("Hello World!"))
-}
-
-func showSnippet(w http.ResponseWriter, r *http.Request) {
-    w.Write([]byte("Show Snippet"))
-}
-
-func createSnippet(w http.ResponseWriter, r *http.Request) {
-    w.Write([]byte("Create Snippet"))
-}
-
 func main() {
     mux := http.NewServeMux()
     mux.HandleFunc("/", home)
