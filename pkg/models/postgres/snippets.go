@@ -12,15 +12,88 @@ type SnippetModel struct {
 
 // This will insert a new snippet into the database.
 func (m *SnippetModel) Insert(title, content, expires string) (int, error) {
-    return 0, nil
+    sqlStatement := `
+    INSERT INTO snippets (title, content, created, expires)
+    VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + $3 * INTERVAL '1 day')
+    RETURNING id`
+
+    id := 0
+    err := m.DB.QueryRow(sqlStatement, title, content, expires).Scan(&id)
+    if err != nil {
+        return 0, err
+    }
+
+    return int(id), nil
 }
 
 // This will return a specific snippet based on its id.
 func (m *SnippetModel) Get(id int) (*models.Snippet, error) {
-    return nil, nil
+    sqlStatement := `
+    SELECT * FROM snippets
+    WHERE expires > CURRENT_TIMESTAMP AND id = $1`
+    s := &models.Snippet{}
+    err := m.DB.QueryRow(sqlStatement, id).Scan(&s.ID, &s.Title, &s.Content, &s.Created, &s.Expires)
+    if err == sql.ErrNoRows {
+        return nil, models.ErrNoRecord
+    } else if err != nil {
+        return nil, err
+    }
+
+    return s, nil
 }
 
 // This will return the 10 most recently created snippets.
 func (m *SnippetModel) Latest() ([]*models.Snippet, error) {
-    return nil, nil
+    sqlStatement := `
+    SELECT * FROM snippets
+    WHERE expires > CURRENT_TIMESTAMP
+    ORDER BY created DESC
+    LIMIT 10`
+
+    rows, err := m.DB.Query(sqlStatement)
+    if err != nil {
+        return nil, err
+    }
+
+    defer rows.Close()
+
+    snippets := []*models.Snippet{}
+
+    for rows.Next() {
+        s := &models.Snippet{}
+        err = rows.Scan(&s.ID, &s.Title, &s.Content, &s.Created, &s.Expires)
+        if err != nil {
+            return nil, err
+        }
+        snippets = append(snippets, s)
+    }
+
+    err = rows.Err()
+    if err != nil {
+        return nil, err
+    }
+
+    return snippets, nil
+}
+
+func (m *SnippetModel) UseTransaction() error {
+    tx, err := m.DB.Begin()
+    if err != nil {
+        return err
+    }
+
+    _, err = tx.Exec("INSERT INTO...")
+    if err != nil {
+        tx.Rollback()
+        return err
+    }
+
+    _, err = tx.Exec("UPDATE...")
+    if err != nil {
+        tx.Rollback()
+        return err
+    }
+
+    err = tx.Commit()
+    return err
 }

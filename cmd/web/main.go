@@ -22,16 +22,15 @@ type application struct {
 const (
   host     = "localhost"
   port     = 5432
-  user     = "golang"
-  password = "password"
+  user     = "postgres"
   dbname   = "snippetbox"
 )
 
 func main() {
     addr := flag.String("addr", ":4000", "HTTP Network address")
     psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
-      "password=%s dbname=%s sslmode=disable",
-      host, port, user, password, dbname)
+      "dbname=%s sslmode=disable",
+      host, port, user, dbname)
     dsn := flag.String("dsn", psqlInfo, "PostgreSQL connection string")
 
     flag.Parse()
