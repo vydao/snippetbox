@@ -4,6 +4,7 @@ import (
     "database/sql"
     "flag"
     "fmt"
+    "html/template"
     "log"
     "net/http"
     "os"
@@ -17,6 +18,7 @@ type application struct {
     errorLog   *log.Logger
     infoLog    *log.Logger
     snippets   *postgres.SnippetModel
+    templateCache map[string]*template.Template
 }
 
 const (
@@ -45,10 +47,16 @@ func main() {
 
     defer db.Close()
 
+    templateCache, err := newTemplateCache("./ui/html")
+    if err != nil {
+        errorLog.Fatal(err)
+    }
+
     app := &application{
         errorLog:   errorLog,
         infoLog:    infoLog,
         snippets:   &postgres.SnippetModel{DB: db},
+        templateCache: templateCache,
     }
 
     srv := &http.Server{
